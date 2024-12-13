@@ -1,43 +1,56 @@
-const urlParams = new URLSearchParams(window.location.search);
-const code = urlParams.get("code");
+document.addEventListener("DOMContentLoaded", function () {
+    const IDme = {
+        access_token: null,
 
-if (code) {
-    const tokenEndpoint = "https://api.id.me/oauth/token";
-    const clientId = "28bf5c72de76f94a5fb1d9454e347d4e";
-    const clientSecret = "3e9f2e9716dba6ec74a2e42e90974828";
-    const redirectUri = "https://justjacob77.github.io/idme-auth-integration/callback.html";
+        // Extract the access token from the URL fragment
+        extractAccessToken: function () {
+            const hash = window.location.hash;
+            if (hash.includes("access_token=")) {
+                this.access_token = hash.split("access_token=")[1].split("&")[0];
+            } else {
+                console.error("Access token not found in URL.");
+            }
+        },
 
-    const tokenData = {
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: "authorization_code",
-        code: code,
-        redirect_uri: redirectUri,
+        // Generate the request parameters for the user info fetch
+        params: function () {
+            return {
+                url: `https://api.id.me/api/public/v3/attributes.json?access_token=${this.access_token}`,
+            };
+        },
+
+        // Perform the user info request
+        request: async function () {
+            if (this.access_token) {
+                try {
+                    const response = await fetch(this.params().url);
+                    const data = await response.json();
+
+                    // Process the response
+                    if (data.status && data.status[0]?.verified) {
+                        const name = data.attributes?.[0]?.value || "User";
+                        const subgroup = data.status[0]?.subgroups?.[0] || "group";
+
+                        document.getElementById("response").innerHTML = `
+                            <span>Thank you, ${name}, for verifying your ${subgroup} status with ID.me.</span>
+                        `;
+                    } else {
+                        document.getElementById("response").textContent =
+                            "Verification failed or data unavailable.";
+                    }
+
+                    console.log(data);
+                } catch (error) {
+                    console.error("Error fetching user info:", error);
+                    document.getElementById("response").textContent = "An error occurred while fetching user info.";
+                }
+            } else {
+                document.getElementById("response").textContent = "Access token is missing.";
+            }
+        },
     };
 
-    fetch(tokenEndpoint, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams(tokenData),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            const userinfoEndpoint = "https://api.id.me/api/public/v3/userinfo";
-            return fetch(userinfoEndpoint, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${data.access_token}`,
-                },
-            });
-        })
-        .then((response) => response.json())
-        .then((userInfo) => {
-            document.getElementById("response").textContent = JSON.stringify(userInfo, null, 2);
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-            document.getElementById("response").textContent = `Error: ${error.message}`;
-        });
-}
+    // Initialize the process
+    IDme.extractAccessToken();
+    IDme.request();
+});
