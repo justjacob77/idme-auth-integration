@@ -5,7 +5,7 @@ if (code) {
     const tokenEndpoint = "https://api.id.me/oauth/token";
     const clientId = "28bf5c72de76f94a5fb1d9454e347d4e";
     const clientSecret = "3e9f2e9716dba6ec74a2e42e90974828";
-    const redirectUri = "http://localhost:5500/callback.html";
+    const redirectUri = "https://justjacob77.github.io/idme-auth-integration/callback.html";
 
     const tokenData = {
         client_id: clientId,
